@@ -3,3 +3,5 @@ uvicorn[standard]
 pydantic
 psycopg[binary]
 psycopg_pool
+PyJWT==2.9.0
+openai==1.99.9
