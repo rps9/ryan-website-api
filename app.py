@@ -1,7 +1,7 @@
 import re, json, hashlib, hmac
 from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from db import ping, pool
 from psycopg import sql
@@ -13,6 +13,8 @@ from open_ai_manager import chatManager
 from email_manager import EmailClient, issue_email_verification_link
 from datetime import datetime, timezone
 from fastapi.responses import RedirectResponse
+from contextlib import asynccontextmanager
+
 
 ALLOWED_ORIGINS = ["https://rps9.github.io", "http://localhost:5173"]
 
@@ -21,7 +23,21 @@ PASSWORD_RE = re.compile(r"^[\x21-\x7E]+$") # Covers all ASCII but space
 
 security = HTTPBearer(auto_error=False)
 
-app = FastAPI()
+# Wake up the db pool 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        pool.open()
+        with pool.connection() as conn, conn.cursor() as cur:
+            cur.execute("SELECT 1")
+        yield
+    finally:
+        try:
+            pool.close()
+        except Exception:
+            pass
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
