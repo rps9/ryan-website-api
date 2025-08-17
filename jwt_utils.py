@@ -21,6 +21,12 @@ def create_access_token(*, username: str, role: str) -> str:
 	}
 	return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
+'''
+3 Roles:
+	• user
+	• admin
+	• owner
+'''
 def current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
 	if not credentials or credentials.scheme.lower() != "bearer":
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing credentials")
@@ -46,6 +52,6 @@ def current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
 	return {"username": username, "role": row[0]}
 
 def current_admin(user = Depends(current_user)):
-	if user["role"] != "admin":
+	if user["role"] == "user":
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin only")
 	return user

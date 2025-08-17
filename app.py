@@ -14,7 +14,7 @@ from email_manager import EmailClient, issue_email_verification_link
 from datetime import datetime, timezone
 from fastapi.responses import RedirectResponse
 
-ALLOWED_ORIGINS = ["https://rps9.github.io"]
+ALLOWED_ORIGINS = ["https://rps9.github.io", "http://localhost:5173"]
 
 USERNAME_RE = re.compile(r"^(?![._-])(?!.*[._-]{2})[a-z0-9._-]+(?<![._-])$")
 PASSWORD_RE = re.compile(r"^[\x21-\x7E]+$") # Covers all ASCII but space
