@@ -222,21 +222,27 @@ def get_recs(body: SongInput):
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="songrecs failed")
 
-class BestowAdminBody(BaseModel):
+class BestowRoleBody(BaseModel):
     username: str
-    
-@app.post("/api/owner/bestow-admin", dependencies=[Depends(current_owner)], status_code=status.HTTP_200_OK)
-def bestow_admin(body: BestowAdminBody):
+    role: str
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def _normalize_username(cls, username: str) -> str:
+        return str(username).strip().lower()
+
+@app.post("/api/owner/bestow-role", dependencies=[Depends(current_owner)], status_code=status.HTTP_200_OK)
+def bestow_admin(body: BestowRoleBody):
     with pool.connection() as conn, conn.cursor() as cur:
         cur.execute(
-            "UPDATE users SET role = 'admin' WHERE username = %s AND role <> 'admin'",
-            (body.username,),
+            "UPDATE users SET role = %s WHERE username = %s AND role <> %s",
+            (body.role, body.username, body.role),
         )
         if cur.rowcount == 0:
             cur.execute("SELECT role FROM users WHERE username = %s", (body.username,))
             row = cur.fetchone()
             if not row:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
-            if row[0] == "admin":
-                return {"ok": True, "message": "user is already an admin"}
-        return {"ok": True, "message": f"{body.username} is now an admin"}
+            if row[0] == body.role:
+                return {"ok": True, "message": f"user is already role: {body.role}"}
+        return {"ok": True, "message": f"{body.username} is now role: {body.role}"}
