@@ -1,20 +1,17 @@
-import re, json, hashlib, hmac
+import re, json, hashlib, hmac, jwt
 from fastapi import FastAPI, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 from db import ping, pool
-from psycopg import sql
 from psycopg.errors import UniqueViolation
 from crypto_utils import hash_password, verify_password 
 from pydantic import BaseModel, Field, field_validator
-from jwt_utils import create_access_token, current_user, current_admin
+from jwt_utils import create_access_token, current_user, current_admin, ACCESS_TOKEN_EXPIRE_MINUTES
 from open_ai_manager import chatManager
 from email_manager import EmailClient, issue_email_verification_link
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from fastapi.responses import RedirectResponse
-from contextlib import asynccontextmanager
-
 
 ALLOWED_ORIGINS = ["https://rps9.github.io", "http://localhost:5173"]
 
@@ -27,6 +24,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -126,7 +124,8 @@ def sign_up(body: SignUpCreds):
                                         
         # role is user by default, so no need to check the db for role
         token = create_access_token(username=body.username, role="user") 
-        return {"ok": True, "message": "account created", "access_token": token, "token_type": "bearer", "role": "user"}
+        expires_at = jwt.decode(token, options={"verify_signature": False})["exp"]
+        return {"ok": True, "message": "account created", "access_token": token, "token_type": "bearer", "expires_at": expires_at, "role": "user"}
 
     except UniqueViolation:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists")
@@ -154,7 +153,8 @@ def sign_in(body: SignInCreds):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="email not verified")
         
         token = create_access_token(username=body.username, role=role)
-        return {"access_token": token, "token_type": "bearer", "role": role}
+        expires_at = jwt.decode(token, options={"verify_signature": False})["exp"]
+        return {"access_token": token, "token_type": "bearer", "expires_at": expires_at, "role": role}
 
     except HTTPException:
         raise

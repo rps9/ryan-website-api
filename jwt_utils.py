@@ -7,7 +7,7 @@ from db import pool
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 600
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 security = HTTPBearer(auto_error=False)
 
@@ -47,7 +47,7 @@ def current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
 	
 	email_verified = row[1]
 	if not email_verified:
-		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="email not verified")
+		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="email not verified")
 
 	return {"username": username, "role": row[0]}
 
