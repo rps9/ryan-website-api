@@ -1,18 +1,11 @@
 import os
 from psycopg_pool import ConnectionPool
+from contextlib import contextmanager
+from psycopg.errors import OperationalError, InterfaceError
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
-pool = ConnectionPool(conninfo=DATABASE_URL, min_size=1, max_size=5, timeout=10, max_idle=300, max_lifetime=1800, reconnect_timeout=5,
-    kwargs={
-        "sslmode": "require",
-        "connect_timeout": 5,
-        "keepalives": 1,
-        "keepalives_idle": 30,
-        "keepalives_interval": 10,
-        "keepalives_count": 5,
-    },
-)
+pool = ConnectionPool(conninfo=DATABASE_URL, min_size=1, max_size=5, timeout=10, check=ConnectionPool.check_connection)
 
 def ping() -> bool:
     with pool.connection() as conn:

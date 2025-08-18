@@ -23,21 +23,7 @@ PASSWORD_RE = re.compile(r"^[\x21-\x7E]+$") # Covers all ASCII but space
 
 security = HTTPBearer(auto_error=False)
 
-# Wake up the db pool 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    try:
-        pool.open()
-        with pool.connection() as conn, conn.cursor() as cur:
-            cur.execute("SELECT 1")
-        yield
-    finally:
-        try:
-            pool.close()
-        except Exception:
-            pass
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
