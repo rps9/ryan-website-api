@@ -7,7 +7,7 @@ from db import ping, pool
 from psycopg.errors import UniqueViolation
 from crypto_utils import hash_password, verify_password 
 from pydantic import BaseModel, Field, field_validator
-from jwt_utils import create_access_token, current_user, current_admin, ACCESS_TOKEN_EXPIRE_MINUTES
+from jwt_utils import create_access_token, current_user, current_admin, current_owner, ACCESS_TOKEN_EXPIRE_MINUTES
 from open_ai_manager import chatManager
 from email_manager import EmailClient, issue_email_verification_link
 from datetime import datetime, timedelta, timezone
@@ -213,7 +213,7 @@ def get_recs(body: SongInput):
         try:
             json_recommendations = json.loads(raw_text_recommendations)
         except:
-            json_recommendations = "it failed ]:"
+            json_recommendations = "it failed ]:" # has yet to fail but we'll see 
 
         return {"recommendations": json_recommendations}
         
@@ -221,3 +221,22 @@ def get_recs(body: SongInput):
         raise
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="songrecs failed")
+
+class BestowAdminBody(BaseModel):
+    username: str
+    
+@app.post("/api/owner/bestow-admin", dependencies=[Depends(current_owner)], status_code=status.HTTP_200_OK)
+def bestow_admin(body: BestowAdminBody):
+    with pool.connection() as conn, conn.cursor() as cur:
+        cur.execute(
+            "UPDATE users SET role = 'admin' WHERE username = %s AND role <> 'admin'",
+            (body.username,),
+        )
+        if cur.rowcount == 0:
+            cur.execute("SELECT role FROM users WHERE username = %s", (body.username,))
+            row = cur.fetchone()
+            if not row:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user not found")
+            if row[0] == "admin":
+                return {"ok": True, "message": "user is already an admin"}
+        return {"ok": True, "message": f"{body.username} is now an admin"}

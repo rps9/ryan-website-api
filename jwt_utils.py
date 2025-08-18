@@ -52,6 +52,12 @@ def current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
 	return {"username": username, "role": row[0]}
 
 def current_admin(user = Depends(current_user)):
-	if user["role"] == "user":
+	if user["role"] != "admin" or user["role"] != "owner":
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin only")
 	return user
+
+def current_owner(user = Depends(current_user)):
+	if user["role"] != "owner":
+		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="owner only")
+	return user
+
