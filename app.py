@@ -98,8 +98,8 @@ class SongInput(BaseModel):
         return song_input
     
 
-@app.get("/api/db/health", dependencies=[Depends(current_admin)])
-def db_health():
+@app.get("/api/db/ping")
+def db_ping():
     ok = False
     try:
         ok = ping()
