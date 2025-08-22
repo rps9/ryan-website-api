@@ -12,6 +12,7 @@ from open_ai_manager import chatManager
 from email_manager import EmailClient, issue_email_verification_link
 from datetime import datetime, timedelta, timezone
 from fastapi.responses import RedirectResponse
+from spotify import router as spotify_router
 
 ALLOWED_ORIGINS = ["https://rps9.github.io", "http://localhost:5173"]
 
@@ -21,6 +22,7 @@ PASSWORD_RE = re.compile(r"^[\x21-\x7E]+$") # Covers all ASCII but space
 security = HTTPBearer(auto_error=False)
 
 app = FastAPI()
+app.include_router(spotify_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -86,16 +88,6 @@ class SignInCreds(BaseModel):
         if not PASSWORD_RE.fullmatch(password):
             raise ValueError("password must be 8-64 chars, visible ASCII (no spaces)")
         return password
-
-class SongInput(BaseModel):
-    song_input: list[str]
-
-    @field_validator("song_input")
-    @classmethod
-    def _check_not_empty(cls, song_input):
-        if not song_input:
-            raise ValueError("song_input must have at least one song")
-        return song_input
     
 
 @app.get("/api/db/health", dependencies=[Depends(current_admin)])
@@ -191,7 +183,20 @@ def verify_email(token_id: str, token: str):
         cur.execute("UPDATE email_verifications SET used_at = %s WHERE id = %s", (now, token_id,))
 
     return RedirectResponse(url="https://rps9.github.io/verify/success.html", status_code=302)
- 
+
+
+class SongInput(BaseModel):
+    song_input: list[str]
+    additional_instructions: str
+
+    @field_validator("song_input")
+    @classmethod
+    def _check_not_empty(cls, song_input):
+        if not song_input:
+            raise ValueError("song_input must have at least one song")
+        return song_input
+    
+
 @app.post("/api/admin/songrecs", dependencies=[Depends(current_admin)], status_code=status.HTTP_200_OK)
 def get_recs(body: SongInput):
     try:
@@ -200,12 +205,15 @@ def get_recs(body: SongInput):
 
         prompt = (
             "You are a helpful music recommendation assistant.\n"
-            "Task: Recommend 5 songs similar in vibe to the seed list.\n\n"
+            "Task: Recommend 10 songs similar in vibe to the seed list.\n\n"
             f"Seeds:\n{seeds}\n\n"
             "Output format (strict JSON):\n"
             '[{"title":"...", "artist":"...", "why":"one short sentence"}, {"title":"...", "artist":"...", "why":"..."}]\n'
-            "Rules: Do not include any of the seed songs in the output. Return exactly 5 items. No prose—JSON only."
+            "Rules: Do not include any of the seed songs in the output. Return exactly 10 items. No prose—JSON only."
         )
+
+        if body.additional_instructions:
+            prompt += f"Additional instructions: {body.additional_instructions}"
 
         gptAgent = chatManager(model="gpt-5-nano")
         raw_text_recommendations = gptAgent.chat(prompt=prompt)
