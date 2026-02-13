@@ -14,7 +14,12 @@ from datetime import datetime, timedelta, timezone
 from fastapi.responses import RedirectResponse
 from spotify import router as spotify_router
 
-ALLOWED_ORIGINS = ["https://rps9.github.io", "http://localhost:5173"]
+ALLOWED_ORIGINS = [
+    "https://rps9.net",
+    "https://www.rps9.net",
+    "https://rps9.github.io",
+    "http://localhost:5173"
+]
 
 USERNAME_RE = re.compile(r"^(?![._-])(?!.*[._-]{2})[a-z0-9._-]+(?<![._-])$")
 PASSWORD_RE = re.compile(r"^[\x21-\x7E]+$") # Covers all ASCII but space
