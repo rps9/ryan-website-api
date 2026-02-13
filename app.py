@@ -123,7 +123,7 @@ def sign_up(body: SignUpCreds):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="username already exists")
 
     except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="signup failed")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Sign Ups not working right now. Have to find a new API provider that won't block port 587...")
     
 @app.post("/api/auth/signin", status_code=status.HTTP_200_OK)
 def sign_in(body: SignInCreds):
