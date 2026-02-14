@@ -12,4 +12,4 @@
 
 ## Services Used
 * **Neon** for free database
-* **Render** to host the web service for free
+* **AWS EC2 with nginx and Docker** for the API and website
