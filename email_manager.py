@@ -31,7 +31,7 @@ class EmailClient:
     def send_verification(self, recipient_email: str, verification_url: str):
         subject = "Verify your email"
         text_body = (
-            "Thanks for making an account for https://rps9.github.io !\n\n"
+            "Thanks for making an account for https://rps9.net !\n\n"
             f"Please verify your email by opening this link:\n{verification_url}\n\n"
             "If you didn't make an account, please ignore this email."
         )
@@ -63,7 +63,7 @@ class EmailClient:
                         <tr>
                         <td style="padding:28px 28px 24px 28px;">
                             <h1 style="margin:0 0 12px 0;color:{text};font-size:24px;line-height:1.2;font-weight:800;">Verify your email</h1>
-                            <p style="margin:0 0 12px 0;color:{text};line-height:1.55;font-size:16px;">Thanks for making an account for https://rps9.github.io !</p>
+                            <p style="margin:0 0 12px 0;color:{text};line-height:1.55;font-size:16px;">Thanks for making an account for https://rps9.net !</p>
                             <p style="margin:0 0 12px 0;color:{text};line-height:1.55;font-size:16px;">Please confirm your email by clicking the button below.</p>
                             <div style="margin-top:20px;">
                             <a href="{verification_url}"
@@ -108,7 +108,7 @@ def issue_email_verification_link(user_id: int) -> str:
 
 def main():
     notification_email = EmailClient()
-    notification_email.send_verification("ryans6892@gmail.com", "https://rps9.github.io")
+    notification_email.send_verification("ryans6892@gmail.com", "https://rps9.net")
 
 if __name__ == "__main__":
     main()

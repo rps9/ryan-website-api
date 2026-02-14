@@ -17,7 +17,6 @@ from spotify import router as spotify_router
 ALLOWED_ORIGINS = [
     "https://rps9.net",
     "https://www.rps9.net",
-    "https://rps9.github.io",
     "http://localhost:5173"
 ]
 
@@ -170,7 +169,7 @@ def verify_email(token_id: str, token: str):
         row = cur.fetchone()
 
         if not row:
-            return RedirectResponse(url="https://rps9.github.io/verify/invalid.html", status_code=302)
+            return RedirectResponse(url="https://rps9.net/verify/invalid.html", status_code=302)
 
         user_id = row[0]
         token_hash = row[1]
@@ -178,16 +177,16 @@ def verify_email(token_id: str, token: str):
         used_at = row[3]
 
         if used_at is not None or now > expires_at:
-            return RedirectResponse(url="https://rps9.github.io/verify/expired.html", status_code=302)
+            return RedirectResponse(url="https://rps9.net/verify/expired.html", status_code=302)
 
         presented = hashlib.sha256(token.encode()).hexdigest()
         if not hmac.compare_digest(token_hash, presented):
-            return RedirectResponse(url="https://rps9.github.io/verify/invalid.html", status_code=302)
+            return RedirectResponse(url="https://rps9.net/verify/invalid.html", status_code=302)
 
         cur.execute("UPDATE users SET email_verified = TRUE WHERE id = %s", (user_id,))
         cur.execute("UPDATE email_verifications SET used_at = %s WHERE id = %s", (now, token_id,))
 
-    return RedirectResponse(url="https://rps9.github.io/verify/success.html", status_code=302)
+    return RedirectResponse(url="https://rps9.net/verify/success.html", status_code=302)
 
 
 class SongInput(BaseModel):
