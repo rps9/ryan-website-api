@@ -13,6 +13,7 @@ from email_manager import EmailClient, issue_email_verification_link
 from datetime import datetime, timedelta, timezone
 from fastapi.responses import RedirectResponse
 from spotify import router as spotify_router
+from recipes import router as recipes_router
 
 ALLOWED_ORIGINS = [
     "https://rps9.net",
@@ -36,11 +37,12 @@ def readiness():
     return {"ok": True}
 
 app.include_router(spotify_router)
+app.include_router(recipes_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
