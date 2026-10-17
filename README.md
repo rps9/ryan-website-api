@@ -12,4 +12,11 @@
 
 ## Services Used
 * **Neon** for free database
-* **AWS EC2 with nginx and Docker** for the API and website
+* **Home server with Nginx, Docker, and Cloudflare Tunnel** for the API and website
+
+## CI/CD
+
+Pull requests run API integration tests against disposable PostgreSQL and smoke
+test the production Docker image. Successful merges to `main` publish the tested
+image for the home server's deployment timer. See
+[deployment setup and rollback](deploy/README.md) for one-time activation.

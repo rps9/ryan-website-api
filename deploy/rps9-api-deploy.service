@@ -1,0 +1,18 @@
+[Unit]
+Description=Deploy a tested website API release from GitHub
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /usr/local/lib/rps9-api-deploy/deploy.py --config /etc/rps9-api-deploy/config.json
+TimeoutStartSec=15min
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/rps9-api-deploy
+

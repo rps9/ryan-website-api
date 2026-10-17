@@ -1,0 +1,105 @@
+name: API CI and deployment
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: API checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: website_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/website_test
+      SECRET_KEY: ci-only-test-secret-not-for-production
+      BASE_URL: http://localhost:8000
+      RUN_DB_TESTS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: python -m compileall -q *.py deploy
+      - run: python -m unittest discover -s tests/deploy -v
+      - run: pytest -q tests/test_api.py
+      - name: Build and smoke test production image
+        run: |
+          docker build --tag "rps9-api:$GITHUB_SHA" .
+          docker run -d --name api-ci --network host \
+            -e DATABASE_URL -e SECRET_KEY -e BASE_URL "rps9-api:$GITHUB_SHA"
+          ready=false
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/api/health; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != true ]; then
+            docker logs api-ci
+            exit 1
+          fi
+          docker stop api-ci
+          docker save "rps9-api:$GITHUB_SHA" | gzip > api-image.tar.gz
+          sha256sum api-image.tar.gz > api-image.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-build
+          path: |
+            api-image.tar.gz
+            api-image.tar.gz.sha256
+          retention-days: 7
+
+  publish:
+    name: Publish deployment
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-build
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="deploy-$GITHUB_SHA"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            if [ "$(gh release view "$tag" --json isDraft --jq .isDraft)" = false ]; then
+              echo 'This commit already has a deployment release.'
+              exit 0
+            fi
+            gh release delete "$tag" --yes
+          fi
+          gh release create "$tag" api-image.tar.gz api-image.tar.gz.sha256 \
+            --target "$GITHUB_SHA" --title "API $GITHUB_SHA" \
+            --notes "Tested production image from Actions run $GITHUB_RUN_ID." \
+            --prerelease --draft
+          gh release edit "$tag" --draft=false

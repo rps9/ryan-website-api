@@ -1,3 +1,9 @@
 .env.prod
 __pycache__
+.venv/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+*.tar.gz
 starmarket/

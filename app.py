@@ -26,6 +26,15 @@ PASSWORD_RE = re.compile(r"^[\x21-\x7E]+$") # Covers all ASCII but space
 security = HTTPBearer(auto_error=False)
 
 app = FastAPI()
+@app.get("/api/health")
+def readiness():
+    try:
+        if not ping():
+            raise RuntimeError("database unavailable")
+    except Exception:
+        raise HTTPException(status_code=503, detail="service unavailable")
+    return {"ok": True}
+
 app.include_router(spotify_router)
 app.add_middleware(
     CORSMiddleware,

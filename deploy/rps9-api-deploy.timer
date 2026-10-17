@@ -1,0 +1,11 @@
+[Unit]
+Description=Check GitHub for a tested API release every five minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=5min
+RandomizedDelaySec=20s
+Unit=rps9-api-deploy.service
+
+[Install]
+WantedBy=timers.target
