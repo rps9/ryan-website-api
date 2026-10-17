@@ -40,16 +40,16 @@ def current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")
 
 	with pool.connection() as conn, conn.cursor() as cur:
-		cur.execute("SELECT role, email_verified FROM users WHERE username = %s", (username,))
+		cur.execute("SELECT id, role, email_verified FROM users WHERE username = %s", (username,))
 		row = cur.fetchone()
 	if not row:
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user not found")
 	
-	email_verified = row[1]
+	email_verified = row[2]
 	if not email_verified:
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="email not verified")
 
-	return {"username": username, "role": row[0]}
+	return {"id": row[0], "username": username, "role": row[1]}
 
 def current_admin(user = Depends(current_user)):
 	if user["role"] != "admin" and user["role"] != "owner":
@@ -60,4 +60,3 @@ def current_owner(user = Depends(current_user)):
 	if user["role"] != "owner":
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="owner only")
 	return user
-
